@@ -1,0 +1,41 @@
+{
+  "name": "mobile-provider-bill-payment-api",
+  "version": "1.0.0",
+  "description": "API project for Mobile Provider Bill Payment System - Group 1",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "gateway": "node gateway.js",
+    "dev": "nodemon server.js",
+    "dev:gateway": "nodemon gateway.js",
+    "test": "node test-api.js",
+    "test-api": "node test-api.js"
+  },
+  "keywords": [
+    "api",
+    "rest",
+    "mobile-provider",
+    "bill-payment"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3",
+    "pg": "^8.11.3",
+    "dotenv": "^16.3.1",
+    "express-rate-limit": "^7.1.5",
+    "multer": "^1.4.5-lts.1",
+    "csv-parser": "^3.0.0",
+    "swagger-ui-express": "^5.0.0",
+    "swagger-jsdoc": "^6.2.8",
+    "winston": "^3.11.0",
+    "express-validator": "^7.0.1",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
+
