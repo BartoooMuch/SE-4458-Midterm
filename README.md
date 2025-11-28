@@ -293,9 +293,9 @@ API Gateway yapılandırma detayları için: [docs/API_GATEWAY.md](docs/API_GATE
 
 ## Code Repository
 
-**GitHub Repository:** [https://github.com/yourusername/mobile-provider-bill-payment-api](https://github.com/yourusername/mobile-provider-bill-payment-api)
+**GitHub Repository:** [https://github.com/BartoooMuch/SE-4458-Midterm](https://github.com/BartoooMuch/SE-4458-Midterm)
 
-> **Not:** Repository linkini kendi GitHub hesabınızla değiştirin. Projeyi GitHub'a push edin ve linki buraya ekleyin.
+> Repository başarıyla GitHub'a yüklendi.
 
 **Deployed API (Swagger):** [Deployment URL buraya eklenecek]
 
