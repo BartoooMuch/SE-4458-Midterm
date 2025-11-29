@@ -33,7 +33,7 @@ const queryBill = async (req, res) => {
     const year = req.query.year || new Date().getFullYear();
 
     const query = `
-      SELECT 
+      SELECT TOP 1
         bill_id,
         subscriber_no,
         month,
@@ -43,8 +43,7 @@ const queryBill = async (req, res) => {
         paid_status,
         created_at
       FROM bills
-      WHERE subscriber_no = $1 AND month = $2 AND year = $3
-      LIMIT 1
+      WHERE subscriber_no = @param1 AND month = @param2 AND year = @param3
     `;
 
     const result = await pool.query(query, [subscriber_no, monthNum, year]);
@@ -62,7 +61,7 @@ const queryBill = async (req, res) => {
       success: true,
       data: {
         bill_total: parseFloat(bill.total_amount),
-        paid_status: bill.paid_status
+        paid_status: Boolean(bill.paid_status)
       }
     });
 
@@ -221,7 +220,7 @@ const queryUnpaidBills = async (req, res) => {
         paid_status,
         created_at
       FROM bills
-      WHERE subscriber_no = $1 AND paid_status = false
+      WHERE subscriber_no = @param1 AND paid_status = 0
       ORDER BY year DESC, month DESC
     `;
 
@@ -294,11 +293,10 @@ const payBill = async (req, res) => {
     const client = await pool.connect();
     
     try {
-      await client.query('BEGIN');
 
-      // Get bill
+      // Get bill with row lock
       const billQuery = `
-        SELECT 
+        SELECT TOP 1
           bill_id,
           subscriber_no,
           month,
@@ -306,16 +304,14 @@ const payBill = async (req, res) => {
           total_amount,
           paid_amount,
           paid_status
-        FROM bills
-        WHERE subscriber_no = $1 AND month = $2 AND year = $3
-        FOR UPDATE
-        LIMIT 1
+        FROM bills WITH (UPDLOCK, ROWLOCK)
+        WHERE subscriber_no = @param1 AND month = @param2 AND year = @param3
       `;
 
       const billResult = await client.query(billQuery, [subscriber_no, monthNum, year]);
 
       if (billResult.rows.length === 0) {
-        await client.query('ROLLBACK');
+        await client.rollback();
         return res.status(404).json({
           success: false,
           message: 'Bill not found for the specified subscriber and month.'
@@ -332,18 +328,18 @@ const payBill = async (req, res) => {
       // Update bill
       const updateQuery = `
         UPDATE bills
-        SET paid_amount = $1,
-            paid_status = $2
-        WHERE bill_id = $3
+        SET paid_amount = @param1,
+            paid_status = @param2
+        WHERE bill_id = @param3
       `;
 
-      await client.query(updateQuery, [finalPaidAmount, isFullyPaid, bill.bill_id]);
+      await client.query(updateQuery, [finalPaidAmount, isFullyPaid ? 1 : 0, bill.bill_id]);
 
       // Create transaction record
       const transactionQuery = `
         INSERT INTO transactions (bill_id, subscriber_no, amount, status)
-        VALUES ($1, $2, $3, 'completed')
-        RETURNING transaction_id, payment_date
+        OUTPUT INSERTED.transaction_id, INSERTED.payment_date
+        VALUES (@param1, @param2, @param3, 'completed')
       `;
 
       const transactionResult = await client.query(transactionQuery, [
@@ -352,7 +348,7 @@ const payBill = async (req, res) => {
         paymentAmount
       ]);
 
-      await client.query('COMMIT');
+      await client.commit();
 
       res.json({
         success: true,
@@ -367,7 +363,7 @@ const payBill = async (req, res) => {
       });
 
     } catch (error) {
-      await client.query('ROLLBACK');
+      await client.rollback();
       throw error;
     } finally {
       client.release();

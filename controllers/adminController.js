@@ -78,13 +78,11 @@ const addBill = async (req, res) => {
     const client = await pool.connect();
 
     try {
-      await client.query('BEGIN');
-
       // Insert bill
       const billQuery = `
         INSERT INTO bills (subscriber_no, month, year, total_amount, paid_amount, paid_status)
-        VALUES ($1, $2, $3, $4, 0, false)
-        RETURNING bill_id
+        OUTPUT INSERTED.bill_id
+        VALUES (@param1, @param2, @param3, @param4, 0, 0)
       `;
 
       const billResult = await client.query(billQuery, [
@@ -119,7 +117,7 @@ const addBill = async (req, res) => {
         );
       }
 
-      await client.query('COMMIT');
+      await client.commit();
 
       res.status(201).json({
         success: true,
@@ -134,7 +132,7 @@ const addBill = async (req, res) => {
       });
 
     } catch (error) {
-      await client.query('ROLLBACK');
+      await client.rollback();
       throw error;
     } finally {
       client.release();
@@ -213,8 +211,6 @@ const addBillBatch = async (req, res) => {
     const failedBills = [];
 
     try {
-      await client.query('BEGIN');
-
       for (const bill of bills) {
         try {
           // Validate
@@ -263,8 +259,8 @@ const addBillBatch = async (req, res) => {
           // Insert bill
           const billResult = await client.query(
             `INSERT INTO bills (subscriber_no, month, year, total_amount, paid_amount, paid_status)
-             VALUES ($1, $2, $3, $4, 0, false)
-             RETURNING bill_id`,
+             OUTPUT INSERTED.bill_id
+             VALUES (@param1, @param2, @param3, @param4, 0, 0)`,
             [bill.subscriber_no, bill.month, bill.year, bill.total_amount]
           );
 
@@ -287,7 +283,7 @@ const addBillBatch = async (req, res) => {
 
       // If all failed, rollback
       if (successCount === 0 && failCount > 0) {
-        await client.query('ROLLBACK');
+        await client.rollback();
         // Clean up file
         fs.unlinkSync(filePath);
         return res.status(400).json({
@@ -300,7 +296,7 @@ const addBillBatch = async (req, res) => {
         });
       }
 
-      await client.query('COMMIT');
+      await client.commit();
 
       // Clean up file
       fs.unlinkSync(filePath);
@@ -317,7 +313,7 @@ const addBillBatch = async (req, res) => {
       });
 
     } catch (error) {
-      await client.query('ROLLBACK');
+      await client.rollback();
       // Clean up file
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);

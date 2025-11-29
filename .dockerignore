@@ -1,0 +1,13 @@
+node_modules
+npm-debug.log
+.env
+.git
+.gitignore
+logs
+*.log
+uploads
+.DS_Store
+bills_batch.csv
+.vscode
+
+

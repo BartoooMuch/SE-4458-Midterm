@@ -12,7 +12,7 @@ Bu proje, Mobile Provider (Turkcell benzeri) fatura ödeme sistemi için REST AP
 - Request/Response Logging
 - API Gateway Desteği
 - Swagger UI Dokümantasyonu
-- PostgreSQL Database
+- Azure SQL Database (PostgreSQL'den migrate edildi)
 - CSV Batch Import
 
 ## API Endpoints
@@ -48,7 +48,7 @@ Bu proje, Mobile Provider (Turkcell benzeri) fatura ödeme sistemi için REST AP
 ### Gereksinimler
 
 - Node.js (v18 veya üzeri)
-- PostgreSQL (v12 veya üzeri)
+- Azure SQL Database veya SQL Server
 - npm veya yarn
 
 ### Adımlar
@@ -73,11 +73,9 @@ cp .env.example .env
 
 5. Database'i oluşturun ve migration'ları çalıştırın:
 ```bash
-# PostgreSQL'de database oluştur
-createdb mobile_provider_db
-
-# SQL dosyasını çalıştır
-psql -U postgres -d mobile_provider_db -f database/schema.sql
+# Azure SQL Database'de schema.sql dosyasını çalıştırın
+# Azure Portal veya sqlcmd kullanarak:
+# sqlcmd -S your-server.database.windows.net -d mobile_provider_db -U your-user -P your-password -i database/schema.sql
 ```
 
 6. Sunucuyu başlatın:
