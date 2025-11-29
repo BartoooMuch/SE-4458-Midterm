@@ -275,8 +275,8 @@ Internet → Azure Web App (Gateway) → Azure Web App (API) → Azure SQL Datab
 
 ### Components
 
-1. **API Web App** (`midterm-api`)
-   - Runtime: Node.js 18 LTS
+1. **API Web App** (`midterm-api-bartu`)
+   - Runtime: Node.js 20 LTS
    - Start Command: `npm start`
    - App: `server.js`
 
@@ -296,9 +296,11 @@ Internet → Azure Web App (Gateway) → Azure Web App (API) → Azure SQL Datab
 
 > Repository başarıyla GitHub'a yüklendi.
 
-**Deployed API (Swagger):** [Deployment URL buraya eklenecek]
+**Deployed API Root:**  
+`https://midterm-api-bartu-bkhffpdzbhbhdddu.switzerlandnorth-01.azurewebsites.net`
 
-> **Not:** Azure/Render.com'a deploy ettikten sonra Swagger URL'ini buraya ekleyin.
+**Deployed Swagger (direct API):**  
+`https://midterm-api-bartu-bkhffpdzbhbhdddu.switzerlandnorth-01.azurewebsites.net/api-docs`
 
 ## Video Presentation
 
