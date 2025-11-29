@@ -71,11 +71,11 @@ cp .env.example .env
 
 4. `.env` dosyasındaki database ve JWT secret değerlerini düzenleyin.
 
-5. Database'i oluşturun ve migration'ları çalıştırın:
+5. Database'i oluşturun ve schema'yı çalıştırın:
 ```bash
-# Azure SQL Database'de schema.sql dosyasını çalıştırın
-# Azure Portal veya sqlcmd kullanarak:
-# sqlcmd -S your-server.database.windows.net -d mobile_provider_db -U your-user -P your-password -i database/schema.sql
+# Azure SQL Database'de schema-mssql.sql dosyasını çalıştırın
+# Azure Portal Query Editor veya sqlcmd kullanarak:
+# sqlcmd -S your-server.database.windows.net -d mobile_provider_db -U your-user -P your-password -i database/schema-mssql.sql
 ```
 
 6. Sunucuyu başlatın:
@@ -223,22 +223,15 @@ Bu proje standalone bir API olarak çalışabilir. Production'da şu seçenekler
 - Kong Gateway
 - Custom Gateway (Express middleware olarak implement edilebilir)
 
-## Deployment
+## Technology Stack
 
-### Azure App Service
-
-1. Azure Portal'da App Service oluşturun (F1 Free tier)
-2. PostgreSQL database servisi oluşturun
-3. Environment variables'ı Azure'da ayarlayın
-4. GitHub Actions veya VS Code extension ile deploy edin
-
-### Render.com
-
-1. GitHub repository'yi bağlayın
-2. PostgreSQL database ekleyin
-3. Environment variables'ı ayarlayın
-4. Build command: `npm install`
-5. Start command: `npm start`
+- **Backend:** Node.js + Express.js
+- **Database:** Azure SQL Database (Cloud)
+- **Authentication:** JWT
+- **Documentation:** Swagger UI
+- **Logging:** Winston
+- **Rate Limiting:** Express Rate Limit + Custom DB-based
+- **Cloud Platform:** Microsoft Azure
 
 ## Issues Encountered
 
@@ -248,46 +241,54 @@ Bu proje standalone bir API olarak çalışabilir. Production'da şu seçenekler
 
 ## API Documentation
 
-Swagger UI: `http://localhost:3000/api-docs`
+**Local Swagger UI:** 
+- API Gateway: `http://localhost:8080/api-docs`
+- Direct API: `http://localhost:3000/api-docs`
 
 Swagger dokümantasyonu tüm endpoint'leri, parametreleri ve response formatlarını içermektedir.
 
 ## Testing
 
-Detaylı test rehberi için: [docs/TESTING.md](docs/TESTING.md)
-
 Hızlı test için:
 ```bash
-# Health check
-curl http://localhost:3000/health
+# Gateway üzerinden health check
+curl http://localhost:8080/health
 
-# Login (test user)
-curl -X POST http://localhost:3000/api/v1/auth/login \
+# Login
+curl -X POST http://localhost:8080/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username": "user1", "password": "password123"}'
+  -d '{"username": "admin", "password": "password123"}'
+
+# Query bill (token ile)
+curl -X GET "http://localhost:8080/api/v1/bills/query?subscriber_no=5551234567&month=11&year=2024" \
+  -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
-## Deployment
+## Azure Deployment
 
-Detaylı deployment rehberi için: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+### Architecture
 
-### Hızlı Deployment (Azure)
+```
+Internet → Azure Web App (Gateway) → Azure Web App (API) → Azure SQL Database
+           Port: 443/8080              Port: 443/3000       
+```
 
-1. Azure Portal'da App Service oluşturun (F1 Free tier)
-2. PostgreSQL database ekleyin
-3. Environment variables'ı ayarlayın
-4. GitHub'dan deploy edin
+### Components
 
-### Deployment (Render.com)
+1. **API Web App** (`midterm-api`)
+   - Runtime: Node.js 18 LTS
+   - Start Command: `npm start`
+   - App: `server.js`
 
-1. GitHub repository'yi bağlayın
-2. PostgreSQL database ekleyin
-3. Environment variables'ı ayarlayın
-4. Build: `npm install`, Start: `npm start`
+2. **Gateway Web App** (`midterm-gateway`)
+   - Runtime: Node.js 18 LTS
+   - Start Command: `npm run gateway`
+   - App: `gateway.js`
 
-## API Gateway
-
-API Gateway yapılandırma detayları için: [docs/API_GATEWAY.md](docs/API_GATEWAY.md)
+3. **Azure SQL Database**
+   - Server: `midterm-sql-12.database.windows.net`
+   - Database: `mobile-provider-db`
+   - Tier: Free (5GB)
 
 ## Code Repository
 
@@ -350,14 +351,15 @@ API Gateway yapılandırma detayları için: [docs/API_GATEWAY.md](docs/API_GATE
 - `POST /api/v1/admin/bills` (Auth: Yes - Admin)
 - `POST /api/v1/admin/bills/batch` (Auth: Yes - Admin)
 
-#### 8. Database & Data Model ✅
+##### 8. Database & Data Model ✅
 - ER Diagram göster
-- Database tablolarını göster
-- Örnek data göster
+- Azure SQL Database kullanıldığını göster
+- Tablolar ve örnek data
 
-#### 9. Deployment (Opsiyonel) ✅
-- Deployed URL göster (varsa)
-- Deployed API'yi test et
+#### 9. Azure Deployment ✅
+- 2 Web App (API + Gateway)
+- Azure SQL Database
+- Deployed Swagger UI
 
 ## Authors
 
