@@ -130,22 +130,36 @@ const processMessage = async (messageText, timestamp) => {
       stack: error.stack 
     });
 
-    // Send error message to user
+    // Send error message to user - ALWAYS write to Firestore
     try {
       // Ensure Firebase is initialized
       if (!getDb()) {
         console.log('⚠️ Firebase not initialized, initializing now...');
         initializeFirebase();
       }
-      const errorMessage = 'Sorry, I encountered an error processing your request. Please try again or rephrase your question.';
+      
+      // Provide more specific error messages
+      let errorMessage = 'Sorry, I encountered an error processing your request. Please try again or rephrase your question.';
+      
+      if (error.message.includes('Rate limit')) {
+        errorMessage = 'I apologize, but the rate limit has been exceeded. Please try again in a moment.';
+      } else if (error.message.includes('not found') || error.message.includes('404')) {
+        errorMessage = 'I couldn\'t find the information you requested. Please check your query and try again.';
+      } else if (error.message.includes('Authentication') || error.message.includes('401')) {
+        errorMessage = 'I\'m having trouble authenticating. Please try again in a moment.';
+      }
+      
       await addMessage(errorMessage, 'agent', {
-        error: error.message
+        error: error.message,
+        timestamp: new Date().toISOString()
       });
+      console.log('✅ Error message written to Firestore');
     } catch (firestoreError) {
       console.error('Failed to write error message to Firestore:', firestoreError);
       logger.error('Failed to write error message to Firestore', { 
         error: firestoreError.message 
       });
+      // Even if Firestore fails, we should not throw - the request was already processed
     }
   }
 };
@@ -215,17 +229,22 @@ const formatQueryBillResponse = (data) => {
  * Format query bill detailed response
  */
 const formatQueryBillDetailedResponse = (data) => {
-  if (!data || !data.bill_details) {
+  if (!data) {
     return 'No detailed bill information found.';
   }
 
   let response = `Here's the breakdown of your bill:\n\n`;
   response += `Total Amount: ${(data.bill_total || 0).toFixed(2)} TL\n\n`;
-  response += `Details:\n`;
 
-  data.bill_details.forEach((detail, index) => {
-    response += `${index + 1}. ${detail.service_type || 'Service'}: ${detail.description || 'N/A'} - ${(detail.amount || 0).toFixed(2)} TL\n`;
-  });
+  if (data.bill_details && data.bill_details.length > 0) {
+    response += `Details:\n`;
+    data.bill_details.forEach((detail, index) => {
+      response += `${index + 1}. ${detail.service_type || 'Service'}: ${detail.description || 'N/A'} - ${(detail.amount || 0).toFixed(2)} TL\n`;
+    });
+  } else {
+    response += `Note: Detailed breakdown is not available for this bill.\n`;
+    response += `Total amount: ${(data.bill_total || 0).toFixed(2)} TL`;
+  }
 
   if (data.pagination) {
     response += `\n(Showing page ${data.pagination.page} of ${data.pagination.totalPages})`;

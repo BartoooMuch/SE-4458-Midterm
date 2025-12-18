@@ -28,7 +28,7 @@ const callMidtermAPI = async (intentData, authToken) => {
         break;
 
       case 'pay_bill':
-        response = await callPayBillAPI(subscriber_no, month, year, amount);
+        response = await callPayBillAPI(subscriber_no, month, year, amount, authToken);
         break;
 
       default:
@@ -182,14 +182,44 @@ const callQueryUnpaidBillsAPI = async (subscriber_no, authToken) => {
 /**
  * Call Pay Bill API (no auth required)
  */
-const callPayBillAPI = async (subscriber_no, month, year, amount) => {
+const callPayBillAPI = async (subscriber_no, month, year, amount, authToken) => {
   try {
+    // If amount not specified, first query the bill to get total amount
+    let paymentAmount = amount;
+    if (!paymentAmount || paymentAmount <= 0) {
+      // Query bill to get total amount
+      const billUrl = `${GATEWAY_URL}/api/v1/bills/query`;
+      const billParams = {
+        subscriber_no: subscriber_no,
+        month: month,
+        year: year || new Date().getFullYear()
+      };
+      
+      const billHeaders = {};
+      if (authToken) {
+        billHeaders['Authorization'] = `Bearer ${authToken}`;
+      }
+      
+      try {
+        const billResponse = await axios.get(billUrl, { params: billParams, headers: billHeaders });
+        if (billResponse.data.success && billResponse.data.data) {
+          paymentAmount = billResponse.data.data.bill_total;
+          logger.info('Using bill total as payment amount', { amount: paymentAmount });
+        } else {
+          throw new Error('Could not retrieve bill information to determine payment amount');
+        }
+      } catch (billError) {
+        logger.error('Error querying bill for payment amount', { error: billError.message });
+        throw new Error('Please specify the payment amount, or the bill could not be found');
+      }
+    }
+
     const url = `${GATEWAY_URL}/api/v1/bills/pay`;
     const data = {
       subscriber_no: subscriber_no,
       month: month,
       year: year || new Date().getFullYear(),
-      amount: amount || 0 // If amount not specified, use 0 or full amount
+      amount: paymentAmount
     };
 
     const response = await axios.post(url, data);

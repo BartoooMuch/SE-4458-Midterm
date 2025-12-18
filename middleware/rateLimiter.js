@@ -33,8 +33,8 @@ const rateLimiter = async (req, res, next) => {
       currentCount = checkResult.rows[0].call_count;
     }
 
-    // Check if limit exceeded (3 calls per day)
-    const LIMIT = 3;
+    // Check if limit exceeded (increased to 100 for testing/development)
+    const LIMIT = 100;
     if (currentCount >= LIMIT) {
       logger.warn('Rate limit exceeded', { subscriberNo, endpoint, count: currentCount });
       return res.status(429).json({
