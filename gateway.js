@@ -51,14 +51,20 @@ const globalRateLimiter = rateLimit({
 });
 
 // Stricter rate limit for authentication endpoints
+// Increased limit for chat service and internal services
 const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Limit login attempts to 10 per 15 minutes
+  max: 100, // Increased limit for chat service and internal services
   skipSuccessfulRequests: true,
   message: {
     success: false,
     message: 'Too many login attempts, please try again later.',
     retryAfter: '15 minutes'
+  },
+  // Skip rate limiting for localhost/internal services
+  skip: (req) => {
+    const ip = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'];
+    return ip === '::1' || ip === '127.0.0.1' || ip === 'localhost';
   }
 });
 

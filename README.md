@@ -363,6 +363,291 @@ Internet → Azure Web App (Gateway) → Azure Web App (API) → Azure SQL Datab
 - Azure SQL Database
 - Deployed Swagger UI
 
+## AI Agent Chat Application
+
+### Overview
+
+The AI Agent Chat Application is a conversational interface that allows users to interact with billing services through natural language. The application uses Firebase Firestore for real-time messaging, an LLM (OpenAI or local model) for intent parsing, and integrates with the midterm APIs through the API Gateway.
+
+### Architecture
+
+```
+┌─────────────────┐
+│  React Frontend │
+│   (Port 3000)   │
+└────────┬────────┘
+         │
+         │ WebSocket / HTTP
+         │
+┌────────▼─────────────────┐
+│   Firebase Firestore      │
+│   (Real-time Database)    │
+└────────┬──────────────────┘
+         │
+         │ Triggers
+         │
+┌────────▼──────────────────┐
+│   Chat Service            │
+│   (Port 3001)             │
+│   - Process Messages      │
+│   - Parse Intent (LLM)     │
+│   - Call Midterm APIs     │
+└────────┬──────────────────┘
+         │
+         │ HTTP
+         │
+┌────────▼────────┐
+│  API Gateway    │
+│  (Port 8080)    │
+└────────┬────────┘
+         │
+         │
+┌────────▼────────┐
+│  Midterm APIs   │
+│  (Port 3000)    │
+└─────────────────┘
+```
+
+### Components
+
+1. **React Frontend** (`frontend/`)
+   - Modern chat UI with real-time updates
+   - Firebase Firestore integration
+   - Action buttons for quick access
+   - Responsive design
+
+2. **Chat Service** (`chat-service/`)
+   - Express.js backend service
+   - Processes messages from Firestore
+   - Integrates with LLM for intent parsing
+   - Calls midterm APIs through gateway
+   - Writes responses back to Firestore
+
+3. **Firebase Firestore**
+   - Real-time database for messages
+   - Automatic synchronization
+   - No backend polling needed
+
+### Setup Instructions
+
+#### 1. Firebase Setup
+
+1. Create a Firebase project at [Firebase Console](https://console.firebase.google.com/)
+2. Enable Firestore Database
+3. Get your Firebase configuration:
+   - Go to Project Settings > General
+   - Scroll down to "Your apps" section
+   - Copy the Firebase configuration object
+
+#### 2. Frontend Setup
+
+```bash
+cd frontend
+npm install
+```
+
+Create `.env` file in `frontend/` directory:
+```env
+REACT_APP_FIREBASE_API_KEY=your-api-key
+REACT_APP_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+REACT_APP_FIREBASE_PROJECT_ID=your-project-id
+REACT_APP_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=123456789
+REACT_APP_FIREBASE_APP_ID=your-app-id
+REACT_APP_BACKEND_URL=http://localhost:3001
+```
+
+Start the frontend:
+```bash
+npm start
+```
+
+#### 3. Chat Service Setup
+
+```bash
+cd chat-service
+npm install
+```
+
+Create `.env` file in `chat-service/` directory:
+```env
+# Chat Service Configuration
+CHAT_SERVICE_PORT=3001
+
+# Gateway URL
+GATEWAY_URL=http://localhost:8080
+
+# Authentication (for calling midterm APIs)
+CHAT_USERNAME=user
+CHAT_PASSWORD=password123
+DEFAULT_SUBSCRIBER_NO=5551234567
+
+# LLM Configuration
+# Option 1: Use OpenAI
+USE_OPENAI=false
+OPENAI_API_KEY=your-openai-api-key
+OPENAI_MODEL=gpt-3.5-turbo
+
+# Option 2: Use Local Model (Ollama, Mistral, etc.)
+LOCAL_LLM_URL=http://localhost:11434/api/generate
+LOCAL_MODEL_NAME=mistral
+
+# Firebase Admin SDK Configuration
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_PRIVATE_KEY=your-private-key
+FIREBASE_CLIENT_EMAIL=your-service-account-email
+
+# Logging
+LOG_LEVEL=info
+```
+
+**Firebase Admin SDK Setup:**
+1. Go to Firebase Console > Project Settings > Service Accounts
+2. Click "Generate new private key"
+3. Download the JSON file
+4. Either:
+   - Set `FIREBASE_SERVICE_ACCOUNT_KEY` as the JSON string, OR
+   - Extract and set `FIREBASE_PROJECT_ID`, `FIREBASE_PRIVATE_KEY`, and `FIREBASE_CLIENT_EMAIL`
+
+Start the chat service:
+```bash
+npm start
+```
+
+#### 4. Using Local LLM (Ollama)
+
+If you want to use a local LLM instead of OpenAI:
+
+1. Install Ollama: https://ollama.ai/
+2. Pull a model:
+   ```bash
+   ollama pull mistral
+   # or
+   ollama pull llama2
+   ```
+3. Set in `.env`:
+   ```env
+   USE_OPENAI=false
+   LOCAL_LLM_URL=http://localhost:11434/api/generate
+   LOCAL_MODEL_NAME=mistral
+   ```
+
+### Running the Complete System
+
+1. **Start the API Server:**
+   ```bash
+   npm start
+   ```
+
+2. **Start the API Gateway:**
+   ```bash
+   npm run gateway
+   ```
+
+3. **Start the Chat Service:**
+   ```bash
+   cd chat-service
+   npm start
+   ```
+
+4. **Start the Frontend:**
+   ```bash
+   cd frontend
+   npm start
+   ```
+
+The frontend will be available at `http://localhost:3000`
+
+### Design Decisions & Assumptions
+
+#### 1. Architecture Pattern
+- **Firestore for Real-time Messaging**: Chosen for automatic synchronization and real-time updates without polling
+- **Separate Chat Service**: Isolated service for message processing to maintain separation of concerns
+- **API Gateway Pattern**: All API calls go through the gateway as required
+
+#### 2. Intent Parsing
+- **LLM Integration**: Uses OpenAI GPT-3.5-turbo or local models (Ollama/Mistral) for natural language understanding
+- **Fallback Parsing**: Keyword-based fallback if LLM is unavailable
+- **Intent Types**: Supports three intents:
+  - `query_bill`: Basic bill query
+  - `query_bill_detailed`: Detailed bill breakdown
+  - `pay_bill`: Bill payment
+
+#### 3. Authentication
+- **Constant Credentials**: Uses constant username/password for authentication as per requirements
+- **Token Caching**: Caches JWT tokens to reduce authentication overhead
+- **No Auth for Pay Bill**: Pay bill endpoint doesn't require authentication
+
+#### 4. Error Handling
+- **Graceful Degradation**: Falls back to keyword matching if LLM fails
+- **User-Friendly Messages**: Provides helpful error messages to users
+- **Logging**: Comprehensive logging for debugging
+
+#### 5. Real-time Updates
+- **Firestore Listeners**: Uses Firestore `onSnapshot` for real-time message updates
+- **No Polling**: Eliminates need for polling or manual refresh
+
+### Supported Intents
+
+The chat application understands the following intents:
+
+1. **Query Bill**
+   - Examples: "I want to check my bill", "Show me my bill for January"
+   - Calls: `GET /api/v1/bills/query`
+
+2. **Query Bill Detailed**
+   - Examples: "Show me the breakdown", "I want detailed bill information"
+   - Calls: `GET /api/v1/bills/query/detailed`
+
+3. **Pay Bill**
+   - Examples: "I want to pay my bill", "Pay 100 TL for January"
+   - Calls: `POST /api/v1/bills/pay`
+
+### Message Flow
+
+1. User sends a message in the React frontend
+2. Message is saved to Firestore
+3. Frontend calls Chat Service API (`/api/chat/process`)
+4. Chat Service:
+   - Receives the message
+   - Calls LLM to parse intent and extract parameters
+   - Calls appropriate midterm API through gateway
+   - Formats the response
+   - Writes response back to Firestore
+5. Frontend automatically updates via Firestore listener
+6. User sees the response in real-time
+
+### Issues Encountered
+
+1. **Firebase Admin SDK Configuration**: Required careful setup of service account credentials
+2. **LLM Response Parsing**: LLM responses need robust JSON parsing with fallback
+3. **Real-time Synchronization**: Firestore listeners need proper cleanup to avoid memory leaks
+4. **CORS Configuration**: Required proper CORS setup for frontend-backend communication
+5. **Token Management**: JWT token caching and refresh logic needed optimization
+
+### Testing
+
+Test the chat application:
+
+1. Start all services (API, Gateway, Chat Service, Frontend)
+2. Open the frontend in browser
+3. Try natural language queries:
+   - "I want to check my bill for January"
+   - "Show me the breakdown of my bill"
+   - "I want to pay 50 TL for my January bill"
+
+### Video Presentation
+
+**Video Link:** [Add your video link here]
+
+> **Note:** Create a short video (5-10 minutes) demonstrating:
+> - Chat application UI
+> - Real-time messaging
+> - Intent parsing (show LLM integration)
+> - API calls through gateway
+> - Response formatting
+> - Error handling
+
 ## Authors
 
 Bu proje SE 4458 dersi için geliştirilmiştir.
