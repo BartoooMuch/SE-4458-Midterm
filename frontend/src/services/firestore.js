@@ -73,10 +73,16 @@ export const subscribeToMessages = (callback) => {
   const q = query(messagesRef, orderBy('timestamp', 'asc'));
 
   unsubscribe = onSnapshot(q, (snapshot) => {
-    const messages = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    const messages = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        // Ensure timestamp is properly formatted
+        timestamp: data.timestamp?.toDate ? data.timestamp.toDate() : (data.timestamp || new Date())
+      };
+    });
+    console.log('Firestore messages received:', messages.length);
     callback(messages);
   }, (error) => {
     console.error('Error subscribing to messages:', error);
