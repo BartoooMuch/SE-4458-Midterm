@@ -304,7 +304,7 @@ Internet → Azure Web App (Gateway) → Azure Web App (API) → Azure SQL Datab
 
 ## Video Presentation
 
-**Proje Sunum Videosu:** [Video link buraya eklenecek]
+**Proje Sunum Videosu:** [https://youtu.be/WZntpIhoxYI](https://youtu.be/WZntpIhoxYI)
 
 > **Not:** Projeyi anlatan kısa bir video (5-10 dakika) hazırlayın ve YouTube, Google Drive veya başka bir platforma yükleyin. Linki buraya ekleyin.
 
@@ -638,7 +638,7 @@ Test the chat application:
 
 ### Video Presentation
 
-**Video Link:** [Add your video link here]
+**Video Link:** [https://youtu.be/WZntpIhoxYI](https://youtu.be/WZntpIhoxYI)
 
 > **Note:** Create a short video (5-10 minutes) demonstrating:
 > - Chat application UI
