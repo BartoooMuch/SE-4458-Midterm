@@ -210,6 +210,10 @@ const callPayBillAPI = async (subscriber_no, month, year, amount, authToken) => 
         }
       } catch (billError) {
         logger.error('Error querying bill for payment amount', { error: billError.message });
+        // If rate limit error, provide helpful message
+        if (billError.response?.status === 429) {
+          throw new Error('Rate limit reached. Please specify the payment amount directly (e.g., "pay 150 TL for my October bill") or try again later.');
+        }
         throw new Error('Please specify the payment amount, or the bill could not be found');
       }
     }

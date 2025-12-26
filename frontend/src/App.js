@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
-import { initializeFirestore, sendMessage, subscribeToMessages } from './services/firestore';
+import { initializeFirestore, sendMessage, subscribeToMessages, clearAllMessages } from './services/firestore';
 import { ChatMessage } from './components/ChatMessage';
 import { ActionButtons } from './components/ActionButtons';
 import { MessageInput } from './components/MessageInput';
@@ -112,6 +112,28 @@ function App() {
       <div className="chat-container">
         <header className="chat-header">
           <h1>AI Agent - Billing Actions</h1>
+          <button 
+            className="clear-chat-btn" 
+            onClick={async () => {
+              if (window.confirm('Tüm mesajları silmek istediğinize emin misiniz?')) {
+                try {
+                  await clearAllMessages();
+                  setMessages([{
+                    id: 'welcome',
+                    text: 'Hello! How can I assist you today?',
+                    sender: 'agent',
+                    timestamp: new Date()
+                  }]);
+                } catch (error) {
+                  console.error('Error clearing messages:', error);
+                  alert('Mesajlar silinirken bir hata oluştu.');
+                }
+              }
+            }}
+            title="Clear Chat"
+          >
+            🗑️ Clear
+          </button>
         </header>
 
         <div className="chat-messages">

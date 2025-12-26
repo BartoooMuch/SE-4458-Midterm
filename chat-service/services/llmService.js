@@ -230,6 +230,9 @@ const normalizeIntentData = (data) => {
     // Default to November 2024 if no month/year specified for detailed query
     finalMonth = 11;
     finalYear = 2024;
+  } else if (intent === 'query_bill_detailed' && month === 10 && !data.year) {
+    // For query_bill_detailed with October, use 2024 (not 2025)
+    finalYear = 2024;
   } else if (intent === 'query_bill' && !month && !data.year) {
     // For regular query, try October 2024 if current month doesn't have bill
     finalMonth = 10;

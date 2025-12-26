@@ -6,7 +6,10 @@ import {
   query, 
   orderBy, 
   onSnapshot,
-  serverTimestamp 
+  serverTimestamp,
+  getDocs,
+  deleteDoc,
+  doc
 } from 'firebase/firestore';
 import axios from 'axios';
 
@@ -95,6 +98,26 @@ export const unsubscribeFromMessages = () => {
   if (unsubscribe) {
     unsubscribe();
     unsubscribe = null;
+  }
+};
+
+export const clearAllMessages = async () => {
+  if (!db) {
+    throw new Error('Firestore not initialized');
+  }
+
+  try {
+    const messagesRef = collection(db, 'messages');
+    const snapshot = await getDocs(messagesRef);
+    
+    const deletePromises = snapshot.docs.map(docRef => deleteDoc(doc(db, 'messages', docRef.id)));
+    await Promise.all(deletePromises);
+    
+    console.log('All messages deleted');
+    return true;
+  } catch (error) {
+    console.error('Error clearing messages:', error);
+    throw error;
   }
 };
 

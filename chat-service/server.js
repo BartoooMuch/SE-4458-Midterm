@@ -43,10 +43,21 @@ app.post('/api/chat/process', async (req, res) => {
 
     // Process message asynchronously
     // Don't wait for the response to be written to Firestore
-    processMessage(message, timestamp).catch(error => {
-      console.error('❌ Error in processMessage:', error.message);
-      logger.error('Error processing message', { error: error.message, stack: error.stack });
-    });
+    // Add timeout to ensure message is processed
+    const timeout = setTimeout(() => {
+      console.warn('⚠️ Message processing timeout after 30 seconds');
+    }, 30000);
+
+    processMessage(message, timestamp)
+      .then(() => {
+        clearTimeout(timeout);
+        console.log('✅ Message processed successfully');
+      })
+      .catch(error => {
+        clearTimeout(timeout);
+        console.error('❌ Error in processMessage:', error.message);
+        logger.error('Error processing message', { error: error.message, stack: error.stack });
+      });
 
     // Return immediately
     res.json({
